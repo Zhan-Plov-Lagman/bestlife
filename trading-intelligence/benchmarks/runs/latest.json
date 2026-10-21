@@ -1,0 +1,32 @@
+{
+  "hardware": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+  "logical_cpus": 16,
+  "python": "3.14.3",
+  "storage": "SQLite WAL FULL; one durable transaction per event",
+  "events_produced": 1000,
+  "events_consumed": 1000,
+  "dropped": 0,
+  "target_rate": 1000,
+  "achieved_events_per_second": 217.98028708342406,
+  "elapsed_seconds": 4.5875708000021405,
+  "processing_ms": {
+    "p50": 3.969400000642054,
+    "p95": 5.714099999750033,
+    "p99": 10.270399998262292
+  },
+  "end_to_end_including_backpressure_ms": {
+    "p50": 1522.9297000005317,
+    "p95": 3385.8891999989282,
+    "p99": 3537.0254999979807
+  },
+  "event_loop_lag_ms": {
+    "p50": 1.737199998606229,
+    "p95": 5.009000002464745,
+    "p99": 8.843400001060218
+  },
+  "idle_cpu_one_core_percent": 0.0,
+  "initial_rss_mb": 59.89453125,
+  "final_rss_mb": 63.12890625,
+  "memory_growth_mb": 3.234375
+}

@@ -1,0 +1,10 @@
+{
+  "scenario": "SYNTHETIC_DEMO_NOT_MARKET_PERFORMANCE",
+  "opened_positions": 3,
+  "closed_positions": 3,
+  "cash": "70.31049887",
+  "realized": "0.31049887",
+  "fees": "0.15693570",
+  "decision_count": 27,
+  "recovery_verified": true
+}

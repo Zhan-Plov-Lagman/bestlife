@@ -1,0 +1,22 @@
+import { test, expect } from "@playwright/test";
+test("paper trading start, stop, kill and journal", async ({ page, request }) => {
+  const session = await (await request.get("http://127.0.0.1:8000/api/session")).json();
+  await request.post("http://127.0.0.1:8000/api/control", { data: { action: "stop" }, headers: { "X-CSRF-Token": session.csrf } });
+  await request.post("http://127.0.0.1:8000/api/control", { data: { action: "clear-halt" }, headers: { "X-CSRF-Token": session.csrf } });
+  await page.goto("/");
+  await expect(page.locator(".header-status")).toContainText("Connected");
+  await page.getByRole("button", { name: "Start paper trading" }).click();
+  await expect(page.getByText("ENGINE RUNNING", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Pause entries" }).click();
+  await expect(page.getByText("ENTRIES PAUSED", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Kill switch", exact: true }).click();
+  await expect(page.getByText("KILL SWITCH ACTIVE", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Decision journal", exact: true }).click();
+  await expect(page.getByText("Decision audit trail", { exact: true })).toBeVisible();
+  await expect(page.locator("details").first()).toBeVisible();
+  await page.locator("summary").first().click();
+  await expect(page.locator(".decision-body").first()).toContainText("Risk:");
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  await page.screenshot({ path: "../docs/terminal-desktop.png", fullPage: true });
+  await request.post("http://127.0.0.1:8000/api/control", { data: { action: "clear-halt" }, headers: { "X-CSRF-Token": session.csrf } });
+});

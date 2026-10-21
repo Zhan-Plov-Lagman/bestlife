@@ -1,0 +1,15 @@
+{
+  "dexscreener": {
+    "status": "OK",
+    "snapshots": 1,
+    "trading_enabled": false
+  },
+  "solana_rpc": {
+    "status": "OK",
+    "response": {
+      "jsonrpc": "2.0",
+      "result": "ok",
+      "id": 1
+    }
+  }
+}
