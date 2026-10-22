@@ -1,105 +1,52 @@
-# Meridian — Solana Trading Intelligence
+# Meridian v1.1 — локальный исследовательский терминал
 
-Локальное приложение для исследования **виртуальной** торговли. Начальный виртуальный баланс — $70. Реальные средства, кошельки, приватные ключи, Axiom cookies и исполнение on-chain отсутствуют. Это рабочий первоначальный вертикальный срез, **не полный релиз всех 32 разделов исходной спецификации**.
+Бумажная торговля с начальным виртуальным балансом $70. Кошельков, ключей и настоящих транзакций нет. Этот этап завершает основные исправления P0 и часть P1; Testing Gateway, Shadow UI и ML registry остаются отдельным этапом. [Инженерный отчёт](docs/V1_1_CHANGELOG.md).
 
-## Запуск в Windows
+## Windows 11: запуск без Docker
 
-Проверено на Python 3.14.3 и Node 24.14.0. Для Docker предусмотрен Python 3.12. Нужны Python 3.12+ и Node 20.9+.
-
-Из папки `trading-intelligence`:
+Нужны Python 3.12+ и Node.js 20.9+. Проверено: Python 3.14.3, Node 24.14.0. Из папки приложения:
 
 ```powershell
-python -m venv .venv
-python -m pip --python .venv/Scripts/python.exe install -r backend/requirements.lock.txt
-cd frontend
-npm.cmd ci
-npm.cmd run build
-cd ..
+.\scripts\setup.ps1
+.\scripts\dev.ps1
+# По окончании:
+.\scripts\stop.ps1
 ```
 
-Если `venv` создал Python, но не смог выполнить ensurepip, вторая команда устанавливает зависимости через системный pip непосредственно в `.venv`.
+Скрипты находят приложение относительно собственного пути, независимо от текущей папки терминала. `setup.ps1 -BackendOnly` и `dev.ps1 -BackendOnly` не требуют frontend/Node. `dev.ps1` запускает собранный Next.js, поэтому после изменений UI выполните сборку или setup. `start.ps1` оставлен как совместимый вход в dev.ps1.
 
-Backend, отдельный терминал:
+Открыть [терминал](http://127.0.0.1:3000), [OpenAPI](http://127.0.0.1:8000/docs). Backend слушает только 127.0.0.1:8000. Скрипт stop проверяет PID, время создания процесса и путь программы, затем запрашивает graceful shutdown. Чужие процессы не завершаются. Второй writer той же SQLite БД отклоняется OS-lock. Журналы запуска — `.run/`.
+
+Торговля после старта приостановлена. Demo показывает вымышленные токены. Start paper trading разрешает входы после накопления признаков и проверки риска. Pause и Kill отменяют BUY, сохраняя выходы SELL. После restart BUY отменяются, SELL требуют нового наблюдения и повторной проверки. Несогласованный ledger блокирует торговлю; Clear halt не обходит сверку. Reset создаёт новую сессию, сохраняя историю.
+
+## Реализовано
+
+- FastAPI, Next.js, SQLite WAL + FULL, Alembic; SQLAlchemy сохраняет конфигурацию PostgreSQL через DATABASE_URL, но PostgreSQL runtime не проверен.
+- Атомарный бумажный ledger на Decimal, идемпотентные события/fills, комиссии, slippage/impact, сверка fills → cash/positions → snapshots.
+- Независимые правила Aggressor и Scalping; постоянный Guardian и отдельные ограничения входа/выхода Risk Engine. Версии baseline-v1 и baseline-v1.1 — правила, не обученные модели.
+- Последовательная обработка batch до 16 событий в runtime (жёсткий предел 32), bounded queue 256, диагностика этапов, backpressure без ослабления durability.
+- Локальная защита Origin/Host, истекающие session tokens, лимиты HTTP/WS, независимые read/control credentials в выключенном по умолчанию remote mode.
+- Изолированный offline replay с виртуальным временем, хешем входных данных и финансового результата, явными синтетическими стресс-сценариями.
+
+## Источники и достоверность
+
+Demo — SYNTHETIC. DexScreener использует документированный `/tokens/v1/solana/{mints}` и остаётся observation-only: исходные timestamps, token safety и исполнимая котировка недоступны. Никакие observed fills не выдумываются. Solana RPC read-only: getHealth, getSlot, getTokenSupply, getAccountInfo. Нет Axiom integration и платных LLM API. Предыдущие проверки внешних endpoint сохранены в docs/provider-check.json; в этом этапе они повторно не выполнялись.
+
+## Проверки и replay
 
 ```powershell
-cd backend
-..\.venv\Scripts\python -m alembic upgrade head
-..\.venv\Scripts\python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
+.\scripts\test.ps1
+.\scripts\dev.ps1
+.\scripts\test.ps1 -E2E
+.\scripts\stop.ps1
+.\scripts\benchmark.ps1 -Seconds 30
+.\.venv\Scripts\python scripts/replay.py dataset.jsonl --output research/run-001 --scenario ADVERSE
 ```
 
-Frontend, второй терминал:
+E2E использует установленный Edge и меняет только виртуальную сессию. Replay требует JSONL объектов MarketSnapshot, отдельный новый каталог и пока принимает только явно синтетический DEMO источник. Сценарии BASE, ADVERSE и ILLIQUID; подробности в [TESTING_GATEWAY.md](docs/TESTING_GATEWAY.md). Старый offline evaluate_candidate.py сохранён; он не обучает и не продвигает модели.
 
-```powershell
-cd frontend
-npm.cmd run start
-```
+## Документация
 
-Открыть [терминал](http://127.0.0.1:3000). [OpenAPI](http://127.0.0.1:8000/docs). После установки/сборки можно использовать `powershell -File scripts/start.ps1`; Ctrl+C останавливает запущенный этим скриптом backend.
+[Архитектура](ARCHITECTURE.md) · [Безопасность](SECURITY.md) · [Измерения](PERFORMANCE.md) · [Проверки](docs/VERIFICATION.md) · [Ограничения](docs/KNOWN_LIMITATIONS.md) · [План](docs/ROADMAP.md) · [Linux systemd](docs/NATIVE_DEPLOYMENT.md).
 
-Система запускается с остановленными входами. Demo-сканер наблюдает три **вымышленных** токена. Нажмите **Start paper trading**, подождите накопления признаков и сигнала. Вход появится только на следующем наблюдении, после повторной проверки риска. В Portfolio доступны позиции и запрос выходов; Decision journal раскрывает признаки и каждую проверку. Pause отменяет pending-ордера; защитные выходы продолжаются. Kill switch блокирует новые входы, но не обещает мгновенную ликвидацию. Clear halt оставляет торговлю остановленной.
-
-## Что реализовано
-
-- FastAPI, Pydantic v2, SQLAlchemy, Alembic, SQLite WAL; PostgreSQL-compatible схема и Compose.
-- Общий scanner → rolling features → baseline regime → Aggressor / Scalping / Guardian → Council → allocation → independent risk → delayed paper fill → ledger / journal.
-- Decimal учёт с фиксированной денежной точностью, комиссии входа/выхода, slippage и impact, net liquidation equity, realized/unrealized P&L, drawdown.
-- Идемпотентность событий и fills через первичные ключи; транзакционный commit всей обработки; откат и halt при сбое записи.
-- Восстановление портфеля и журнала после перезапуска. Pending-ордера отменяются, автоматический рестарт входов запрещён.
-- Настройки, performance modes, журнал, explorer, portfolio, status WebSocket с reconnect/backoff/jitter, монитор CPU/RAM/очереди/задержек.
-- HTTP pooling, timeouts, ограничение запросов, TTL-cache, 429 backoff, circuit breaker, bounded queue/backpressure.
-- Offline chronological split/purge/embargo, walk-forward splits, leakage checks, Brier/precision/recall/calibration metrics. JSON-only candidate evaluation; **обученных моделей нет**.
-- Governor приостанавливает стратегии после трёх подряд закрытых убыточных сделок; самостоятельно лимиты не повышает.
-
-## Источники данных
-
-**Demo** работает без интернета. Это детерминированный тестовый сценарий, не исторический backtest и не доказательство доходности.
-
-**DexScreener** использует документированный batch endpoint `/tokens/v1/solana/{mints}`. В Settings остановленного пустого портфеля выберите DEXSCREENER и задайте до 30 mint-адресов. Выбирается самый ликвидный доступный pool, цены разных pools не усредняются. Источник не сообщает надёжное время исходной цены, holder concentration или исполнимую котировку. Поэтому качество `UNAVAILABLE`, сделки fail closed. Нельзя трактовать время HTTP-наблюдения как время on-chain сделки. Смена provider создаёт отдельную session, история Demo не смешивается с ней.
-
-**Solana RPC**: read-only adapter с allowlist `getHealth`, `getSlot`, `getTokenSupply`, `getAccountInfo`; UI-проверка доступности не запускается автоматически. `/api/rpc-health` делает read-only запрос к публичному endpoint. Wallet intelligence ещё не реализован.
-
-Внешняя доступность и фактические результаты проверок перечислены в [VERIFICATION.md](docs/VERIFICATION.md). Нет платных LLM или облачных GPU. Нет интеграции Axiom.
-
-## Проверки
-
-```powershell
-cd backend
-..\.venv\Scripts\python -m pytest -q --basetemp=./.test-local
-..\.venv\Scripts\python -m ruff check app tests
-..\.venv\Scripts\python -m mypy app
-..\.venv\Scripts\python -m alembic current
-cd ../frontend
-npm.cmd run typecheck
-npm.cmd run test
-npm.cmd run build
-npm.cmd run e2e
-npm.cmd audit
-cd ..
-.\.venv\Scripts\python benchmarks/run.py --events 1000
-```
-
-E2E требует работающих серверов и установленного Edge. Он меняет только текущую виртуальную сессию (start/stop/kill/clear-halt). В ограниченной Windows-песочнице asyncio socketpair и процессы сборщика могут блокироваться: проверки выполнялись с разрешённым локальным доступом. Для сборки используется Webpack: установленный Turbopack завершался внутренней ошибкой дочернего процесса.
-
-## Docker / PostgreSQL
-
-Скопируйте `.env.example` в `.env`, задайте локальный `POSTGRES_PASSWORD` (URL-safe, не используйте пароль от других сервисов), затем:
-
-```powershell
-docker compose up --build
-```
-
-Сервисы публикуются только на `127.0.0.1`. PostgreSQL не публикует порт наружу. Миграция выполняется до старта backend. **Compose и PostgreSQL runtime здесь не проверены: Docker в среде отсутствует.** Не запускайте больше одного backend worker: v1 использует одного writer и процессный lock.
-
-## Offline evaluation
-
-```powershell
-.\.venv\Scripts\python scripts/evaluate_candidate.py dataset.json --horizon 60 --embargo 10 --version candidate-1 --output candidate-1.json
-```
-
-Вход: список объектов `time`, `feature_time`, `label` (0/1), `out_of_sample_probability`. Метрики считаются на последнем временном сегменте; происхождение out-of-sample прогнозов обязан подтвердить исследователь. Никаких моделей из pickle/joblib не загружается, автоматического promotion нет.
-
-## Ограничения и продолжение
-
-Подробности: [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md), [PERFORMANCE.md](PERFORMANCE.md), [план продолжения](docs/ROADMAP.md), оригинальное задание [PROJECT_SPEC.md](PROJECT_SPEC.md).
-
-Тестовая модель исполнения all-or-none, без partial fills и order-book. Нет гарантии исполнения stop-loss при отсутствии данных. Mark-to-market может устаревать; показано время последнего mark. Baseline heuristic не является доказательством положительного ожидания. ML training, полноценная нормализованная реляционная схема, историческая выборка, автоматическая retention и sustained 1000 events/s остаются незавершёнными.
+Docker/Compose-файлы сохранены только как необязательные примеры совместимости; Docker и WSL2 для запуска не нужны. Реальный облачный деплой не выполнялся.

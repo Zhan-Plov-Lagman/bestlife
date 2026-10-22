@@ -1,3 +1,14 @@
+# v1.1 verification update — 2026-10-22
+
+Final run: **53 pytest passed (6.25 s)**; Ruff passed; mypy passed (16 files). TypeScript, production Next.js build, Vitest (1) and Playwright/Edge (1) passed. Native start, duplicate-instance rejection and graceful owned stop passed; servers stopped. setup.ps1 -BackendOnly passed with existing dependencies. Fresh installation, PostgreSQL, Linux and long-duration soak were not tested.
+
+Benchmark suite: 30-second offers at 100/500/1000 events/s, zero dropped events, achieved 99.99/499.74/792.33. Sustainable 1000/s is not accepted. Full measurement definitions and raw paths are in PERFORMANCE.md. Existing provider/audit results below belong to the previous stage and were not rerun. Full engineering scope, failures corrected and remaining gaps: [V1_1_CHANGELOG.md](V1_1_CHANGELOG.md).
+
+Warnings remain: Starlette/httpx deprecation, Vitest config-loader and shutdown timeout despite successful exit. Testing Gateway, online Shadow and ML registry are deferred, not marked accepted.
+
+---
+
+# Historical v1 verification (retained evidence)
 # Verification report — 2026-10-22
 
 ## Scope
@@ -51,3 +62,4 @@ Short test runs do not establish long-running availability, expected profit, com
 - [DexScreener public API reference](https://docs.dexscreener.com/api/reference) for documented batch token endpoints.
 
 Remaining work with acceptance criteria: [ROADMAP.md](ROADMAP.md).
+

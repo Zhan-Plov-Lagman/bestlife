@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import secrets
 import time
 from collections import deque
 from contextlib import asynccontextmanager
@@ -18,12 +17,14 @@ from .analytics import FEATURE_CATALOG
 from .database import Store
 from .domain import Settings
 from .engine import TradingEngine
+from .instance import InstanceLease
 from .providers import (
     DemoMarketDataProvider,
     DexScreenerMarketDataProvider,
     HTTPTransport,
     SolanaRPCProvider,
 )
+from .security import AccessPolicy, BodyLimitMiddleware
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("trading")
@@ -40,8 +41,11 @@ class Runtime:
         self.process = psutil.Process()
         self.transport: HTTPTransport | None = None
         self.provider_error: str | None = None
-        self.csrf = secrets.token_urlsafe(32)
+        self.access = AccessPolicy()
+        self.ws_connections = 0
         self.last_scan = 0.0
+        self.queue_wait_ms: deque[float] = deque(maxlen=5000)
+        self.ingestion_ms: deque[float] = deque(maxlen=5000)
 
     async def produce(self, client: httpx.AsyncClient):
         self.transport = HTTPTransport(client, asyncio.Semaphore(2))
@@ -56,7 +60,9 @@ class Runtime:
                 if not snapshots:
                     self.engine.state["provider_healthy"] = False
                 for snapshot in snapshots:
-                    await self.queue.put(snapshot)  # backpressure, never drop critical events
+                    before = time.perf_counter()
+                    await self.queue.put((snapshot, before))
+                    self.ingestion_ms.append((time.perf_counter() - before) * 1000)
                 self.last_scan = time.monotonic()
             except Exception as exc:
                 self.engine.state["provider_healthy"] = False
@@ -70,14 +76,20 @@ class Runtime:
 
     async def consume(self):
         while True:
-            item = await self.queue.get()
+            items = [await self.queue.get()]
+            while not self.queue.empty() and len(items) < 16:
+                items.append(self.queue.get_nowait())
+            self.queue_wait_ms.extend(
+                (time.perf_counter() - enqueued) * 1000 for _, enqueued in items
+            )
             try:
                 if not self.engine.state["fault"]:
-                    await asyncio.to_thread(self.engine.process, item)
+                    await asyncio.to_thread(self.engine.process_batch, [s for s, _ in items])
             except Exception as exc:
                 logger.error(json.dumps({"event": "pipeline_halted", "error": type(exc).__name__}))
             finally:
-                self.queue.task_done()
+                for _ in items:
+                    self.queue.task_done()
 
     def snapshot(self):
         state = self.engine.snapshot()
@@ -98,6 +110,15 @@ class Runtime:
             "p95_ms": lat[min(len(lat) - 1, int(len(lat) * 0.95))] if lat else None,
             "p99_ms": lat[min(len(lat) - 1, int(len(lat) * 0.99))] if lat else None,
         }
+        for key, values in {
+            **self.engine.stage_metrics,
+            "queue_wait_ms": self.queue_wait_ms,
+            "ingestion_ms": self.ingestion_ms,
+        }.items():
+            ordered = sorted(values)
+            state["monitor"][key + "_p95"] = (
+                ordered[min(len(ordered) - 1, int(len(ordered) * 0.95))] if ordered else None
+            )
         return state
 
     async def broadcast(self):
@@ -107,7 +128,7 @@ class Runtime:
             await asyncio.sleep(delay)
             self.lag_ms = max(0, (time.monotonic() - started - delay) * 1000)
             if self.clients:
-                snapshot = self.snapshot()
+                snapshot = await asyncio.to_thread(self.snapshot)
                 for queue in tuple(self.clients):
                     if queue.full():
                         queue.get_nowait()
@@ -117,6 +138,16 @@ class Runtime:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    lease = InstanceLease().acquire()
+    try:
+        async with runtime_lifespan(app):
+            yield
+    finally:
+        lease.close()
+
+
+@asynccontextmanager
+async def runtime_lifespan(app: FastAPI):
     runtime = Runtime()
     app.state.runtime = runtime
     async with httpx.AsyncClient(
@@ -130,14 +161,18 @@ async def lifespan(app: FastAPI):
             asyncio.create_task(runtime.broadcast()),
         ]
         yield
-        for task in tasks:
-            task.cancel()
+        tasks[0].cancel()
+        tasks[2].cancel()
+        await asyncio.gather(tasks[0], tasks[2], return_exceptions=True)
+        await asyncio.wait_for(runtime.queue.join(), timeout=30)
+        tasks[1].cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         await asyncio.to_thread(runtime.engine.control, "stop")
         runtime.engine.store.engine.dispose()
 
 
 app = FastAPI(title="Solana Intelligence • Paper only", lifespan=lifespan)
+app.add_middleware(BodyLimitMiddleware)
 app.add_middleware(
     TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "testserver", "backend"]
 )
@@ -164,16 +199,24 @@ async def guard(request: Request, call_next):
     origin = request.headers.get("origin")
     if origin and origin not in ORIGINS:
         return JSONResponse({"detail": "Origin rejected"}, status_code=403)
-    if request.method in {"POST", "PUT", "DELETE", "PATCH"}:
-        expected = request.app.state.runtime.csrf
-        if not secrets.compare_digest(request.headers.get("x-csrf-token", ""), expected):
+    policy = request.app.state.runtime.access
+    mutation = request.method in {"POST", "PUT", "DELETE", "PATCH"}
+    if not policy.authorize(
+        request.client.host if request.client else "",
+        request.headers.get("authorization", ""),
+        mutation or request.url.path == "/api/session",
+    ):
+        return JSONResponse({"detail": "ACCESS_DENIED"}, status_code=403)
+    if mutation:
+        if not policy.valid_session(request.headers.get("x-csrf-token", "")):
             return JSONResponse({"detail": "Session token required"}, status_code=403)
     return await call_next(request)
 
 
 @app.get("/api/session")
 def session(request: Request):
-    return {"csrf": request.app.state.runtime.csrf}
+    policy = request.app.state.runtime.access
+    return {"csrf": policy.issue(), "expires_in": policy.ttl}
 
 
 @app.get("/api/state")
@@ -221,10 +264,10 @@ def history(
 
 
 @app.get("/api/models")
-def models():
+def models(request: Request):
     return {
         "active": {
-            "version": "baseline-v1",
+            "version": request.app.state.runtime.engine.cfg.strategy_version,
             "type": "RULE_BASED",
             "validation": "ENGINEERING_TESTS_ONLY",
             "trained": False,
@@ -250,21 +293,36 @@ async def rpc_health(request: Request):
 @app.websocket("/ws")
 async def updates(ws: WebSocket):
     runtime = ws.app.state.runtime
-    if ws.headers.get("origin") not in ORIGINS or len(runtime.clients) >= 8:
+    if ws.headers.get("origin") not in ORIGINS or runtime.ws_connections >= 8:
         await ws.close(code=1008)
         return
+    runtime.ws_connections += 1
     await ws.accept()
     queue: asyncio.Queue = asyncio.Queue(maxsize=1)
     try:
-        hello = await asyncio.wait_for(ws.receive_json(), timeout=5)
-        if not secrets.compare_digest(str(hello.get("csrf", "")), runtime.csrf):
+        raw = await asyncio.wait_for(ws.receive_text(), timeout=5)
+        if len(raw) > 4096:
+            await ws.close(code=1009)
+            return
+        hello = json.loads(raw)
+        if (
+            not isinstance(hello, dict)
+            or not runtime.access.valid_session(str(hello.get("csrf", "")))
+            or not runtime.access.authorize(
+                ws.client.host if ws.client else "", str(hello.get("authorization", "")), False
+            )
+        ):
             await ws.close(code=1008)
             return
         runtime.clients.add(queue)
         await ws.send_json(runtime.snapshot())
         while True:
+            if not runtime.access.valid_session(str(hello.get("csrf", ""))):
+                await ws.close(code=1008)
+                return
             await ws.send_json(await queue.get())
-    except (WebSocketDisconnect, TimeoutError, RuntimeError):
+    except (WebSocketDisconnect, TimeoutError, RuntimeError, ValueError):
         pass
     finally:
         runtime.clients.discard(queue)
+        runtime.ws_connections -= 1

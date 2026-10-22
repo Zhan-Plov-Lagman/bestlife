@@ -1,0 +1,72 @@
+{
+  "hardware": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+  "logical_cpus": 16,
+  "python": "3.14.3",
+  "storage": "SQLite WAL FULL; bounded durable transactions",
+  "events_produced": 3000,
+  "events_consumed": 3000,
+  "dropped": 0,
+  "target_rate": 100,
+  "batch_limit": 16,
+  "queue_wait_ms": {
+    "p50": 0.05780000356025994,
+    "p95": 3.7050999962957576,
+    "p99": 4.1326999926241115
+  },
+  "ingestion_ms": {
+    "p50": 0.0092999980552122,
+    "p95": 0.016099991626106203,
+    "p99": 0.02130000211764127
+  },
+  "stages": {
+    "features_ms": {
+      "p50": 0.14239999291021377,
+      "p95": 0.2209999947808683,
+      "p99": 0.25520000781398267
+    },
+    "strategies_ms": {
+      "p50": 0.05329999839887023,
+      "p95": 0.08370001160074025,
+      "p99": 0.10430000838823617
+    },
+    "risk_ms": {
+      "p50": 0.028599999495781958,
+      "p95": 0.046499990276061,
+      "p99": 0.06090001261327416
+    },
+    "persistence_batch_ms": {
+      "p50": 1.7772999999579042,
+      "p95": 2.665699998033233,
+      "p99": 9.173500002361834
+    },
+    "batch_total_ms": {
+      "p50": 2.8986999968765303,
+      "p95": 4.014899997855537,
+      "p99": 10.242899996228516
+    }
+  },
+  "achieved_events_per_second": 99.98606027678483,
+  "elapsed_seconds": 30.004182499993476,
+  "processing_ms": {
+    "p50": 0.9787000017240644,
+    "p95": 1.2901000009151176,
+    "p99": 1.4086000010138378
+  },
+  "end_to_end_including_backpressure_ms": {
+    "p50": 8.260499991592951,
+    "p95": 15.47969999955967,
+    "p99": 18.989200005307794
+  },
+  "event_loop_lag_ms": {
+    "p50": 5.392800007248297,
+    "p95": 7.321000006631948,
+    "p99": 10.093800005270168
+  },
+  "idle_cpu_one_core_percent": 0.0,
+  "initial_rss_mb": 60.515625,
+  "final_rss_mb": 63.9453125,
+  "memory_growth_mb": 3.4296875,
+  "active_cpu_one_core_percent": 29.63128557160967,
+  "processing_definition": "event compute and immediate SQL only; batch commit measured separately"
+}

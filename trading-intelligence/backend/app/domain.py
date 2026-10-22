@@ -46,6 +46,7 @@ class Settings(StrictModel):
     aggressor_enabled: bool = True
     scalping_enabled: bool = True
     retention_days: int = Field(default=7, ge=1, le=90)
+    strategy_version: Literal["baseline-v1", "baseline-v1.1"] = "baseline-v1.1"
 
     @field_validator("token_mints")
     @classmethod
@@ -87,7 +88,10 @@ class MarketSnapshot(StrictModel):
 
 
 class FeatureVector(StrictModel):
-    version: str = "features-v1"
+    version: str = "features-v1.1"
+    latest_return: float | None = None
+    pressure_consistency: float | None = None
+    sample_interval_seconds: float | None = None
     return_window: float | None = None
     acceleration: float | None = None
     consistency: float | None = None

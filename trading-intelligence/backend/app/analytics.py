@@ -6,6 +6,19 @@ from statistics import pstdev
 from .domain import Assessment, FeatureVector, MarketSnapshot, Settings, StrategySignal
 
 FEATURE_CATALOG = {
+    "latest_return": ("ratio", "last / previous - 1", "price", "2 observations"),
+    "pressure_consistency": (
+        "fraction",
+        "buy-dominant / known observations",
+        "provider counts",
+        "12 observations",
+    ),
+    "sample_interval_seconds": (
+        "seconds",
+        "last timestamp - previous",
+        "event time",
+        "2 observations",
+    ),
     "return_window": ("ratio", "last / first - 1", "price", "12 observations"),
     "acceleration": ("ratio", "last return - prior return", "price", "3 observations"),
     "consistency": ("fraction", "positive returns / returns", "price", "12 observations"),
@@ -39,6 +52,14 @@ class FeatureEngine:
         returns = [b / a - 1 for a, b in zip(prices, prices[1:])]
         f.return_window = prices[-1] / prices[0] - 1
         f.acceleration = returns[-1] - returns[-2]
+        f.latest_return = returns[-1]
+        f.sample_interval_seconds = (
+            history[-1].event_time - history[-2].event_time
+        ).total_seconds()
+        known = [x for x in history if x.buys is not None and x.sells is not None]
+        f.pressure_consistency = (
+            sum((x.buys or 0) > (x.sells or 0) for x in known) / len(known) if known else None
+        )
         f.consistency = sum(r > 0 for r in returns) / len(returns)
         f.volatility = pstdev(returns)
         f.liquidity_change = (
@@ -84,7 +105,7 @@ def regime(s: MarketSnapshot, f: FeatureVector) -> Assessment:
     return Assessment(regime="SHORT_TERM_OPPORTUNITY", score=0.5, reason_codes=["RANGE_BASELINE"])
 
 
-def dispatch(
+def dispatch_v1(
     s: MarketSnapshot, f: FeatureVector, r: Assessment, cfg: Settings, cost: float
 ) -> list[StrategySignal]:
     signals = []
@@ -132,3 +153,26 @@ def council(signals: list[StrategySignal]) -> tuple[str, list[str]]:
         if s.action == "PROPOSE_ENTRY":
             return s.strategy, s.reason_codes
     return "SKIP", list(dict.fromkeys(r for s in signals[:-1] for r in s.reason_codes))
+
+
+def dispatch(
+    s: MarketSnapshot, f: FeatureVector, r: Assessment, cfg: Settings, cost: float
+) -> list[StrategySignal]:
+    if cfg.strategy_version == "baseline-v1":
+        return dispatch_v1(s, f, r, cfg, cost)
+    from .strategies import AggressorBaseline, ScalpingBaseline
+
+    signals = [
+        AggressorBaseline().evaluate(s, f, r, cfg, cost),
+        ScalpingBaseline().evaluate(s, f, r, cfg, cost),
+    ]
+    g, reasons = guardian(s, f)
+    signals.append(
+        StrategySignal(
+            strategy="GUARDIAN",
+            action="REJECT" if g == "BLOCK" else "WAIT",
+            score=1 if g == "BLOCK" else 0,
+            reason_codes=reasons or ["NO_OBSERVED_BLOCKERS"],
+        )
+    )
+    return signals

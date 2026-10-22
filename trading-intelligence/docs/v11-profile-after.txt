@@ -1,0 +1,53 @@
+         1634280 function calls (1616207 primitive calls) in 3.105 seconds
+
+   Ordered by: cumulative time
+   List reduced from 551 to 45 due to restriction <45>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+     1000    0.013    0.000    3.080    0.003 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\backend\app\engine.py:447(process)
+     1000    0.049    0.000    3.067    0.003 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\backend\app\engine.py:450(process_batch)
+3000/2000    0.003    0.000    1.152    0.001 {built-in method builtins.next}
+     2000    0.006    0.000    1.149    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:3214(begin)
+     1000    0.002    0.000    1.081    0.001 C:\Python314\Lib\contextlib.py:145(__exit__)
+     1000    0.078    0.000    1.049    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\backend\app\engine.py:489(_process_event)
+     1000    0.003    0.000    1.034    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\util.py:126(__exit__)
+     1000    0.001    0.000    1.030    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:2607(commit)
+     1000    0.004    0.000    1.029    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:2724(_do_commit)
+     1000    0.001    0.000    1.025    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:2699(_connection_commit_impl)
+     1000    0.002    0.000    1.024    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:1157(_commit_impl)
+     1000    0.002    0.000    1.021    0.001 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\default.py:953(do_commit)
+     1000    1.019    0.001    1.019    0.001 {method 'commit' of 'sqlite3.Connection' objects}
+    10000    0.011    0.000    0.965    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:1419(execute)
+    10000    0.007    0.000    0.954    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\elements.py:524(_execute_on_connection)
+    10000    0.045    0.000    0.947    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:1633(_execute_clauseelement)
+    10000    0.035    0.000    0.632    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:1782(_execute_context)
+    10000    0.089    0.000    0.299    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\default.py:1564(_init_compiled)
+    10000    0.029    0.000    0.290    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\base.py:1841(_exec_single_context)
+    10000    0.020    0.000    0.259    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\elements.py:694(_compile_w_cache)
+     1000    0.006    0.000    0.214    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\backend\app\database.py:98(save)
+    10000    0.021    0.000    0.214    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\util\langhelpers.py:1467(oneshot)
+     1000    0.036    0.000    0.204    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\backend\app\analytics.py:42(compute)
+    10000    0.007    0.000    0.192    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\cache_key.py:263(_generate_cache_key)
+    20035    0.079    0.000    0.186    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\coercions.py:323(expect)
+    10000    0.084    0.000    0.186    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\cache_key.py:209(_generate_cache_key)
+    11000    0.150    0.000    0.150    0.000 {method 'execute' of 'sqlite3.Cursor' objects}
+    10000    0.005    0.000    0.150    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\default.py:1191(do_execute)
+     8000    0.010    0.000    0.139    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\sqltypes.py:2965(process)
+      997    0.005    0.000    0.134    0.000 C:\Python314\Lib\statistics.py:632(pstdev)
+4000/2000    0.005    0.000    0.129    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\operators.py:741(__eq__)
+     8000    0.005    0.000    0.128    0.000 C:\Python314\Lib\json\__init__.py:185(dumps)
+     2000    0.003    0.000    0.126    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\elements.py:1592(operate)
+     2000    0.002    0.000    0.123    0.000 {built-in method _operator.eq}
+     8000    0.012    0.000    0.123    0.000 C:\Python314\Lib\json\encoder.py:185(encode)
+     2000    0.006    0.000    0.119    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\type_api.py:261(operate)
+      997    0.022    0.000    0.118    0.000 C:\Python314\Lib\statistics.py:1511(_ss)
+     3000    0.006    0.000    0.111    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\base.py:289(_generative)
+     8000    0.106    0.000    0.106    0.000 C:\Python314\Lib\json\encoder.py:207(iterencode)
+    10000    0.020    0.000    0.106    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\engine\default.py:2104(_setup_result_proxy)
+     2000    0.007    0.000    0.094    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\default_comparator.py:50(_boolean_compare)
+     1000    0.002    0.000    0.085    0.000 <sqlalchemy generated _generative() wrapper for sqlalchemy.sql.dml.ValuesBase.values>:1(values)
+     1000    0.002    0.000    0.078    0.000 <sqlalchemy generated check() wrapper for sqlalchemy.sql.dml.ValuesBase.values>:1(values)
+     5988    0.014    0.000    0.076    0.000 {built-in method builtins.sum}
+     1000    0.004    0.000    0.076    0.000 C:\Users\ktspl\OneDrive\Desktop\soft\trading-intelligence\.venv\Lib\site-packages\sqlalchemy\sql\base.py:315(check)
+
+

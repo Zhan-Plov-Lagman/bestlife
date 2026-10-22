@@ -1,0 +1,72 @@
+{
+  "hardware": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+  "logical_cpus": 16,
+  "python": "3.14.3",
+  "storage": "SQLite WAL FULL; bounded durable transactions",
+  "events_produced": 30000,
+  "events_consumed": 30000,
+  "dropped": 0,
+  "target_rate": 1000,
+  "batch_limit": 16,
+  "queue_wait_ms": {
+    "p50": 331.0750999953598,
+    "p95": 377.2138000058476,
+    "p99": 386.59009999537375
+  },
+  "ingestion_ms": {
+    "p50": 0.0012999953469261527,
+    "p95": 9.206899994751438,
+    "p99": 36.34489999967627
+  },
+  "stages": {
+    "features_ms": {
+      "p50": 0.08379999781027436,
+      "p95": 0.12459998833946884,
+      "p99": 0.1660999987507239
+    },
+    "strategies_ms": {
+      "p50": 0.031799994758330286,
+      "p95": 0.051099996198900044,
+      "p99": 0.06749999010935426
+    },
+    "risk_ms": {
+      "p50": 0.01930000144056976,
+      "p95": 0.02820001100189984,
+      "p99": 0.03890000516548753
+    },
+    "persistence_batch_ms": {
+      "p50": 5.344699995475821,
+      "p95": 41.901400007191114,
+      "p99": 46.1150000046473
+    },
+    "batch_total_ms": {
+      "p50": 13.163399999029934,
+      "p95": 49.55199999676552,
+      "p99": 53.759200003696606
+    }
+  },
+  "achieved_events_per_second": 792.334037190961,
+  "elapsed_seconds": 37.86281869999948,
+  "processing_ms": {
+    "p50": 0.43390000064391643,
+    "p95": 0.721100004739128,
+    "p99": 0.9940000018104911
+  },
+  "end_to_end_including_backpressure_ms": {
+    "p50": 2643.3719000051497,
+    "p95": 7342.800200000056,
+    "p99": 7768.319800001336
+  },
+  "event_loop_lag_ms": {
+    "p50": 5.018999998574145,
+    "p95": 10.269999993615784,
+    "p99": 14.040100004640408
+  },
+  "idle_cpu_one_core_percent": 0.0,
+  "initial_rss_mb": 60.39453125,
+  "final_rss_mb": 68.49609375,
+  "memory_growth_mb": 8.1015625,
+  "active_cpu_one_core_percent": 84.55689803147287,
+  "processing_definition": "event compute and immediate SQL only; batch commit measured separately"
+}

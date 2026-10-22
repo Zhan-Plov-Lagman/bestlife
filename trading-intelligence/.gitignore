@@ -13,3 +13,6 @@ playwright-report/
 *.tsbuildinfo
 .test-*/
 benchmarks/runs/*.db*
+.run/
+*.writer.lock
+research/

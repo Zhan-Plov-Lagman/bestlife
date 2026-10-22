@@ -80,7 +80,9 @@ def db_engine(url: str | None = None):
 def write_record(
     conn: Connection, name: str, key: str, session: str, at: str, payload: dict[str, Any]
 ) -> None:
-    conn.execute(records[name].insert().values(id=key, session_id=session, at=at, payload=payload))
+    conn.execute(
+        records[name].insert(), {"id": key, "session_id": session, "at": at, "payload": payload}
+    )
 
 
 class Store:
@@ -94,10 +96,11 @@ class Store:
             ).scalar_one_or_none()
 
     def save(self, conn: Connection, payload: dict[str, Any]) -> None:
-        if conn.execute(select(state_table.c.id).where(state_table.c.id == 1)).first():
-            conn.execute(state_table.update().where(state_table.c.id == 1).values(payload=payload))
-        else:
-            conn.execute(state_table.insert().values(id=1, payload=payload))
+        result = conn.execute(
+            state_table.update().where(state_table.c.id == 1), {"payload": payload}
+        )
+        if result.rowcount == 0:
+            conn.execute(state_table.insert(), {"id": 1, "payload": payload})
 
     def recent(self, name: str, session: str, limit: int = 100) -> list[dict[str, Any]]:
         table = records[name]

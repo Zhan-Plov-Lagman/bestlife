@@ -1,0 +1,72 @@
+{
+  "hardware": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+  "logical_cpus": 16,
+  "python": "3.14.3",
+  "storage": "SQLite WAL FULL; bounded durable transactions",
+  "events_produced": 1000,
+  "events_consumed": 1000,
+  "dropped": 0,
+  "target_rate": 1000,
+  "batch_limit": 16,
+  "queue_wait_ms": {
+    "p50": 4.672900002333336,
+    "p95": 12.275899993255734,
+    "p99": 16.69620000757277
+  },
+  "ingestion_ms": {
+    "p50": 0.0016999983927235007,
+    "p95": 0.004699992132373154,
+    "p99": 0.00829999044071883
+  },
+  "stages": {
+    "features_ms": {
+      "p50": 0.0855999969644472,
+      "p95": 0.1343000039923936,
+      "p99": 0.18789999012369663
+    },
+    "strategies_ms": {
+      "p50": 0.03300000389572233,
+      "p95": 0.05319999763742089,
+      "p99": 0.07619999814778566
+    },
+    "risk_ms": {
+      "p50": 0.019099999917671084,
+      "p95": 0.028300011763349175,
+      "p99": 0.042100000428035855
+    },
+    "persistence_batch_ms": {
+      "p50": 2.448500003083609,
+      "p95": 7.689699996262789,
+      "p99": 11.259999999310821
+    },
+    "batch_total_ms": {
+      "p50": 6.069499999284744,
+      "p95": 11.920699995243922,
+      "p99": 16.221999991103075
+    }
+  },
+  "achieved_events_per_second": 968.8733920861309,
+  "elapsed_seconds": 1.0321265999955358,
+  "processing_ms": {
+    "p50": 0.44720000005327165,
+    "p95": 0.7981999951880425,
+    "p99": 1.0002000053646043
+  },
+  "end_to_end_including_backpressure_ms": {
+    "p50": 16.42219998757355,
+    "p95": 27.977599995210767,
+    "p99": 32.81520000018645
+  },
+  "event_loop_lag_ms": {
+    "p50": 3.211500001489185,
+    "p95": 8.871599997510202,
+    "p99": 12.647499994491227
+  },
+  "idle_cpu_one_core_percent": 0.0,
+  "initial_rss_mb": 60.23046875,
+  "final_rss_mb": 63.16796875,
+  "memory_growth_mb": 2.9375,
+  "active_cpu_one_core_percent": 96.8873392086131,
+  "processing_definition": "event compute and immediate SQL only; batch commit measured separately"
+}

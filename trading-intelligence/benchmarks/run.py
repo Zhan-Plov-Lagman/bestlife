@@ -17,7 +17,7 @@ from app.domain import D, MarketSnapshot, now
 from app.engine import TradingEngine
 
 
-async def benchmark(events: int):
+async def benchmark(events: int, rate: int = 1000, batch: int = 1, output: str = "latest.json"):
     folder = Path(__file__).resolve().parent / "runs"
     folder.mkdir(exist_ok=True)
     store = Store("sqlite:///" + str(folder / f"bench-{uuid4().hex}.db"))
@@ -29,29 +29,36 @@ async def benchmark(events: int):
     idle_cpu = process.cpu_percent()
     initial_rss = process.memory_info().rss
     queue: asyncio.Queue = asyncio.Queue(maxsize=256)
-    delays, lags = [], []
+    delays, lags, waits, ingestion = [], [], [], []
     produced = consumed = 0
     started = time.perf_counter()
+    cpu_started = sum(process.cpu_times()[:2])
     base = now()
     done = False
 
     async def producer():
         nonlocal produced
         for i in range(events):
-            intended = started + i / 1000
+            intended = started + i / rate
             await asyncio.sleep(max(0, intended - time.perf_counter()))
-            s = MarketSnapshot(event_id=str(i), event_time=base + timedelta(microseconds=i), provider="DEMO", token_mint="BENCH", symbol="BENCH", pool_address="BENCH", price=D(1)+D(i % 100)/10000, liquidity=D(100000), volume=D(10000+i), buys=80, sells=20, token_safety_known=True, suspicious=False, execution_model="SYNTHETIC_CONSERVATIVE")
-            await queue.put((s, intended))
+            s = MarketSnapshot(event_id=str(i), event_time=base + timedelta(seconds=i/rate), provider="DEMO", token_mint="BENCH", symbol="BENCH", pool_address="BENCH", price=D(1)+D(i % 100)/10000, liquidity=D(100000), volume=D(10000+i), buys=80, sells=20, token_safety_known=True, suspicious=False, execution_model="SYNTHETIC_CONSERVATIVE")
+            enqueued = time.perf_counter()
+            await queue.put((s, intended, enqueued))
+            ingestion.append((time.perf_counter()-enqueued)*1000)
             produced += 1
 
     async def consumer():
         nonlocal consumed
         while consumed < events:
-            s, intended = await queue.get()
-            await asyncio.to_thread(engine.process, s)
-            delays.append((time.perf_counter() - intended)*1000)
-            consumed += 1
-            queue.task_done()
+            items = [await queue.get()]
+            while not queue.empty() and len(items) < batch:
+                items.append(queue.get_nowait())
+            waits.extend((time.perf_counter()-enqueued)*1000 for _,_,enqueued in items)
+            await asyncio.to_thread(engine.process_batch, [s for s,_,_ in items])
+            for _, intended, _ in items:
+                delays.append((time.perf_counter() - intended)*1000)
+                consumed += 1
+                queue.task_done()
 
     async def heartbeat():
         while not done:
@@ -64,13 +71,16 @@ async def benchmark(events: int):
     done = True
     await pulse
     elapsed = time.perf_counter()-started
+    active_cpu = 100 * (sum(process.cpu_times()[:2]) - cpu_started) / elapsed
 
     def percentiles(values):
         ordered = sorted(values)
         return {f"p{p}": ordered[min(len(ordered)-1, int(len(ordered)*p/100))] for p in (50,95,99)}
 
-    result = {"hardware": platform.platform(), "processor": platform.processor(), "logical_cpus": psutil.cpu_count(), "python": platform.python_version(), "storage": "SQLite WAL FULL; one durable transaction per event", "events_produced": produced, "events_consumed": consumed, "dropped": produced-consumed, "target_rate": 1000, "achieved_events_per_second": consumed/elapsed, "elapsed_seconds": elapsed, "processing_ms": percentiles(list(engine.latencies)), "end_to_end_including_backpressure_ms": percentiles(delays), "event_loop_lag_ms": percentiles(lags), "idle_cpu_one_core_percent": idle_cpu, "initial_rss_mb": initial_rss/1024**2, "final_rss_mb": process.memory_info().rss/1024**2, "memory_growth_mb": (process.memory_info().rss-initial_rss)/1024**2}
-    (folder / "latest.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
+    result = {"hardware": platform.platform(), "processor": platform.processor(), "logical_cpus": psutil.cpu_count(), "python": platform.python_version(), "storage": "SQLite WAL FULL; bounded durable transactions", "events_produced": produced, "events_consumed": consumed, "dropped": produced-consumed, "target_rate": rate, "batch_limit": batch, "queue_wait_ms": percentiles(waits), "ingestion_ms": percentiles(ingestion), "stages": {k: percentiles(list(v)) for k,v in engine.stage_metrics.items() if v}, "achieved_events_per_second": consumed/elapsed, "elapsed_seconds": elapsed, "processing_ms": percentiles(list(engine.latencies)), "end_to_end_including_backpressure_ms": percentiles(delays), "event_loop_lag_ms": percentiles(lags), "idle_cpu_one_core_percent": idle_cpu, "initial_rss_mb": initial_rss/1024**2, "final_rss_mb": process.memory_info().rss/1024**2, "memory_growth_mb": (process.memory_info().rss-initial_rss)/1024**2}
+    result["active_cpu_one_core_percent"] = active_cpu
+    result["processing_definition"] = "event compute and immediate SQL only; batch commit measured separately"
+    (folder / output).write_text(json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2))
     store.engine.dispose()
 
@@ -78,7 +88,10 @@ async def benchmark(events: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--events", type=int, default=1000)
+    parser.add_argument("--rate", type=int, choices=[100,500,1000], default=1000)
+    parser.add_argument("--batch", type=int, choices=[1,16,32], default=16)
+    parser.add_argument("--output", default="latest.json")
     args = parser.parse_args()
     if not 1 <= args.events <= 100000:
         parser.error("events must be 1..100000")
-    asyncio.run(benchmark(args.events))
+    asyncio.run(benchmark(args.events, args.rate, args.batch, args.output))

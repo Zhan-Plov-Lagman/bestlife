@@ -1,0 +1,72 @@
+{
+  "hardware": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 68 Stepping 1, AuthenticAMD",
+  "logical_cpus": 16,
+  "python": "3.14.3",
+  "storage": "SQLite WAL FULL; bounded durable transactions",
+  "events_produced": 15000,
+  "events_consumed": 15000,
+  "dropped": 0,
+  "target_rate": 500,
+  "batch_limit": 16,
+  "queue_wait_ms": {
+    "p50": 3.0177000007824972,
+    "p95": 10.361799999373034,
+    "p99": 18.647099990630522
+  },
+  "ingestion_ms": {
+    "p50": 0.0026000052457675338,
+    "p95": 0.005699999746866524,
+    "p99": 0.008700008038431406
+  },
+  "stages": {
+    "features_ms": {
+      "p50": 0.09429999045096338,
+      "p95": 0.17869999282993376,
+      "p99": 0.21329999435693026
+    },
+    "strategies_ms": {
+      "p50": 0.03679998917505145,
+      "p95": 0.06760000542271882,
+      "p99": 0.08759999764151871
+    },
+    "risk_ms": {
+      "p50": 0.02200000744778663,
+      "p95": 0.03919999289792031,
+      "p99": 0.05089999467600137
+    },
+    "persistence_batch_ms": {
+      "p50": 1.6666000010445714,
+      "p95": 14.668800009530969,
+      "p99": 18.898099995567463
+    },
+    "batch_total_ms": {
+      "p50": 2.884400004404597,
+      "p95": 15.74339999933727,
+      "p99": 20.128200005274266
+    }
+  },
+  "achieved_events_per_second": 499.73818050397347,
+  "elapsed_seconds": 30.015717400005087,
+  "processing_ms": {
+    "p50": 0.5358999915188178,
+    "p95": 0.9734999912325293,
+    "p99": 1.1356000031810254
+  },
+  "end_to_end_including_backpressure_ms": {
+    "p50": 9.158000000752509,
+    "p95": 24.98129999730736,
+    "p99": 29.499800002668053
+  },
+  "event_loop_lag_ms": {
+    "p50": 1.8165999883785842,
+    "p95": 8.78309999301564,
+    "p99": 11.565100003499538
+  },
+  "idle_cpu_one_core_percent": 0.0,
+  "initial_rss_mb": 60.57421875,
+  "final_rss_mb": 66.50390625,
+  "memory_growth_mb": 5.9296875,
+  "active_cpu_one_core_percent": 85.99661189505878,
+  "processing_definition": "event compute and immediate SQL only; batch commit measured separately"
+}
